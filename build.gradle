@@ -1,0 +1,72 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+group = 'org.exploit'
+version = '1.0'
+
+repositories {
+    mavenCentral()
+
+    maven {
+        url("https://maven.exploit.org")
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'org.exploit'
+            artifactId = 'netarmor'
+            version = '1.0'
+
+            from components.java
+        }
+    }
+
+    repositories {
+        maven {
+            url 'https://maven.exploit.org'
+
+            credentials {
+                username(exploitUsername)
+                password(exploitPassword)
+            }
+        }
+    }
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.9.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    implementation 'org.exploit:secure-memory:1.0'
+    implementation 'org.owasp.antisamy:antisamy:1.7.5'
+    implementation 'org.apache.commons:commons-text:1.11.0'
+
+    implementation 'io.netty:netty-codec-http2:4.1.101.Final'
+    implementation 'io.netty:netty-buffer:4.1.101.Final'
+    implementation 'io.netty:netty-codec-http:4.1.101.Final'
+    implementation 'io.netty:netty-common:4.1.101.Final'
+    implementation 'io.netty:netty-transport:4.1.101.Final'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
+    implementation 'org.apache.httpcomponents.core5:httpcore5:5.2.3'
+
+    implementation 'io.projectreactor:reactor-core:3.6.0'
+    implementation 'net.java.dev.jna:jna:5.13.0'
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.77'
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+}
+
+jar {
+    setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+
+    from(configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }) {
+        exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
