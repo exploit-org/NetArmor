@@ -64,12 +64,12 @@ Then add NetArmor's dependency to project:
 <dependency>
     <groupId>org.exploit</groupId>
     <artifactId>netarmor</artifactId>
-    <version>1.0.0</version>
+    <version>1.0</version>
 </dependency>
 ```
 ### Gradle
 ```groovy
-implementation 'org.exploit:netarmor:1.0.0'
+implementation 'org.exploit:netarmor:1.0'
 ```
 
 # NetArmor Basic Features
