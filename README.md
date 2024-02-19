@@ -240,8 +240,8 @@ public class Main {
 # Netty Security Handlers
 As netty based servers may have different handlers in different order, you should first create NettyServer instance.
 
-By the current date (2023-12-04) following servers are implemented via separate dependencies:
-- `ReactorNettyProvider` - For reactor netty based servers.
+By the current date (2024-02-19) following servers are implemented via separate dependencies:
+- [ReactorNettyProvider](https://github.com/exploit-org/netarmor-reactor-netty) - For reactor netty based servers.
 
 To use it, please add following dependency:
 ### Maven
@@ -249,12 +249,12 @@ To use it, please add following dependency:
 <dependency>
     <groupId>org.exploit</groupId>
     <artifactId>netarmor-reactor-netty</artifactId>
-    <version>1.0.0</version>
+    <version>1.0</version>
 </dependency>
 ```
 ### Gradle
 ```groovy
-implementation 'org.exploit:netarmor-reactor-netty:1.0.0'
+implementation 'org.exploit:netarmor-reactor-netty:1.0'
 ```
 
 To create own instance of NettyServer, implement `NettyServer` interfaces:
@@ -601,7 +601,7 @@ Please make sure before you create a pull request, that your code is clean, read
 Follow KISS, DRY, SOLID, YAGNI, and other principles.
 
 ### FOR ANY NON-PUBLIC SECURITY ISSUES, THAT YOU DON'T WANT TO DISCLOSE, PLEASE CONTACT US BY EMAIL:
-### `contact@exploit.org`
+### `security@exploit.org`
 
 ```
 In the industry, there may arise security concerns that you prefer not to disclose publicly but wish to address. 
