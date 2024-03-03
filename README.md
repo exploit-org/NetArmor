@@ -84,13 +84,13 @@ public class Main {
 }
 ```
 
-To specify custom your `SecurityConfiguration` instance,
+To specify custom your `SecurityConfig` instance,
 or already implemented JSON based CommonSecurityConfig, use:
 
 ```java
 public class Main {
     public static void main(String[] args) {
-        SecurityConfiguration securityConfig; /* implement it */
+        SecurityConfig securityConfig; /* implement it */
         NetArmor armor = NetArmor.create(securityConfig);
     }
 }
@@ -176,7 +176,7 @@ But it is recommended to use `Argon2id` or `SCrypt`, with <b>Argon2id</b> being 
 if properly configured.
 
 All configurations are set to default values, but you can change them, if you want to make them more secure.
-The default password encoder is specified in SecurityConfiguration instance.
+The default password encoder is specified in SecurityConfig instance.
 
 ### Sample
 ```java
@@ -300,7 +300,7 @@ public interface NettyServerPipeline<T> {
 ```java
 public class Main {
     public static void main(String[] args) {
-        SecurityConfiguration config = getSecurityConfig(); //e.g. method to get security config
+        SecurityConfig config = getSecurityConfig(); //e.g. method to get security config
         
         NetArmorPipeline<HttpServer> armor = NetArmorPipeline.newBuilder(new ReactorNettyProvider(config))
                 .config(config) // if not specified default is used
