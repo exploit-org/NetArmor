@@ -1,10 +1,9 @@
-# NetArmor
-##### Where Security Meets Innovation.
+![](img/netarmor.png)
 
 ## Introduction
 **NetArmor** is a <b>reactive</b> enterprise security solution designed for today’s dynamic digital environments. Blending the best of ESAPI and OWASP Top 10, NetArmor is tailored for Netty-based applications, providing a robust defense layer for high-risk sectors, including finance.
 
-Built for scalability, flexibility, and reliability, NetArmor seamlessly integrates with any Netty based framework, ensuring your network is safeguarded against evolving threats. Its user-friendly interface simplifies management, making enterprise-grade security accessible to all.
+Built for scalability, flexibility, and reliability, NetArmor integrates with any Netty based web framework, ensuring your network is safeguarded against evolving threats. Its developer-friendly interfaces simplify solving security problems, making enterprise-grade security accessible to all.
 
 ## Notes
 - **Continual Evolution**: Stay ahead with regular updates, as NetArmor grows every day.
@@ -34,7 +33,10 @@ Built for scalability, flexibility, and reliability, NetArmor seamlessly integra
 - TLS (JA3) Fingerprinting
 - HTTP/2 Fingerprinting
 
-Non-reactive components, like password hashing and validators, are optimized for utmost efficacy and security.
+You can read a series of articles on our [BLOG](https://blog.exploit.org) for diving into cybersecurity world,
+including articles under **Beyond The Code** label for application security, which also include how security features
+supported by NetArmor can help you in security tasks.
+
 ## Installation
 First add exploit.org's maven repository:
 ### Maven:
@@ -64,12 +66,12 @@ Then add NetArmor's dependency to project:
 <dependency>
     <groupId>org.exploit</groupId>
     <artifactId>netarmor</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
 </dependency>
 ```
 ### Gradle
 ```groovy
-implementation 'org.exploit:netarmor:1.0'
+implementation 'org.exploit:netarmor:1.1'
 ```
 
 # NetArmor Basic Features
@@ -243,18 +245,24 @@ As netty based servers may have different handlers in different order, you shoul
 By the current date (2024-02-19) following servers are implemented via separate dependencies:
 - [ReactorNettyProvider](https://github.com/exploit-org/netarmor-reactor-netty) - For reactor netty based servers.
 
+We are burning the midnight oil to make NetArmorPipeline available to more Netty based web frameworks,
+but nothing stops you to implement own provider and use it.
+
+See example of implementing netty server provider in [Reactor Netty's Provider](https://github.com/exploit-org/netarmor-reactor-netty/tree/main/src/main/java/org/exploit/armor/reactor)
+
+
 To use it, please add following dependency:
 ### Maven
 ```xml
 <dependency>
     <groupId>org.exploit</groupId>
     <artifactId>netarmor-reactor-netty</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
 </dependency>
 ```
 ### Gradle
 ```groovy
-implementation 'org.exploit:netarmor-reactor-netty:1.0'
+implementation 'org.exploit:netarmor-reactor-netty:1.1'
 ```
 
 To create own instance of NettyServer, implement `NettyServer` interfaces:
@@ -294,13 +302,12 @@ public class Main {
     public static void main(String[] args) {
         SecurityConfiguration config = getSecurityConfig(); //e.g. method to get security config
         
-        NetArmorPipeline<HttpServer> armor = NetArmorPipeline.newBuilder(new ReactorNettyProvider())
+        NetArmorPipeline<HttpServer> armor = NetArmorPipeline.newBuilder(new ReactorNettyProvider(config))
                 .config(config) // if not specified default is used
                 .intrusion(intrusionHandler)
                 .whitelist(whitelistLimiter)
                 .blacklist(blacklistLimiter)
                 .tlsFingerprint(tlsPacketHandler)
-                .http2Fingerprint(htt2PacketHandler)
                 .build();
         
         // Now configure your server
@@ -320,7 +327,8 @@ And add them to the builder:
 ```java
 public class Main {
     public static void main(String[] args) {
-        NetArmorPipeline<HttpServer> armor = NetArmorPipeline.newBuilder(new ReactorNettyProvider())
+        SecurityConfig config = getConfig(); // implement
+        NetArmorPipeline<HttpServer> armor = NetArmorPipeline.newBuilder(new ReactorNettyProvider(config))
                 .mitigation(mitigationHandler)
                 .build();
     }
@@ -343,97 +351,6 @@ Security policy management is a set of rules, that are used to protect your appl
 SecurityConfig instance contains default security policy management rules, but you can change them, if you want to make them more secure.
 
 #### Secure by default.
-
-## Enhanced Security Handlers
-NetArmor provides a set of enhanced security features, that can be used to protect your application from various attacks,
-including bot attacks, traffic from malicious/infected clients, etc.
-
-### TLS (JA3) Fingerprinting
-#### Reactive.
-
-First of all, what is TLS fingerprinting? It is a technique, that is used to identify a client based on the TLS handshake,
-exactly on the Client Hello message. It is a pretty new technique, that is used by many companies, including Cloudflare, to identify malicious clients.
-
-As it is specific to every application, NetArmor provides a simple interface, that can be used to implement TLS fingerprinting:
-```java
-public class MyTlsFingerprinter implements FingerprintPacketHandler {
-    @Override
-    public Mono<ResultCode> handle(ChannelHandlerContext ctx, ClientHello ch) {
-        var ja3 = ch.ja3();
-        
-        var hash = ja3.md5(); // md5 hash of ja3 fingerprint
-        var raw = ja3.value(); // raw ja3 fingerprint
-        
-        // Do something with ja3
-        // for example, check if it is in the blacklist
-        // P.S isBlacklisted should be implemented by you
-        
-        if (isBlacklisted(ja3))
-            return Mono.just(ResultCode.BLOCK);
-        
-        return Mono.just(ResultCode.OK);
-    }
-    
-    @Override
-    public String name() {
-        return "my-tls-fingerprinter"; // Unique name used in the pipeline
-    }
-}
-```
-When ResultCode.BLOCK is returned, the connection is closed immediately,
-there is no need to close it manually. (e.q calling `ctx.close()`)
-
-Don't forget to add your fingerprint handler to NetArmor instance:
-```
-NetArmorPipeline.newBuilder(<your provider>)
-        .tlsFingerprint(new MyTlsFingerprinter())
-        .build();
-```
-
-#### Possible use cases:
-- Allowing only specific clients to connect to your application (e.g. mobile clients)
-- Blocking malicious clients (e.g. requests sent by malware on user's computer)
-- Detecting bot attacks
-
-### HTTP/2 Fingerprinting
-#### Reactive.
-
-HTTP/2 Fingerprinting is a technique, that is used to identify a client based on the HTTP/2 connection preface.
-It is not very popular, but still can be used to identify if the client is browser or not.
-
-To handle HTTP/2 fingerprinting, you need to implement `Http2FingerprintPacketHandler` interface:
-```java
-public class MyHttp2Fingerprinter implements Http2FingerprintPacketHandler {
-    @Override
-    public Mono<ResultCode> handle(ChannelHandlerContext ctx, Http2Settings settings) {
-        // Do something with settings
-        // for instance, you can check if settings don't correlate with the browsers' settings
-        
-        if (isSuspicious(settings))
-            return Mono.just(ResultCode.BLOCK);
-        
-        return Mono.just(ResultCode.OK);
-    }
-    
-    @Override
-    public String name() {
-        return "my-http2-fingerprinter"; // Unique name used in the pipeline
-    }
-}
-```
-When ResultCode.BLOCK is returned, the connection is closed immediately.
-Don't forget to add your fingerprint handler to NetArmor instance:
-```
-NetArmorPipeline.newBuilder(<your provider>)
-        .http2Fingerprint(new MyHttp2Fingerprinter())
-        .build();
-```
-
-#### Possible use cases:
-
-- Client Mismatch Detection
-- Bot and Script Identification
-- Targeted Attack Recognition
 
 ### IP Whitelisting/Blacklisting
 #### Reactive.
@@ -485,12 +402,63 @@ NetArmorPileine.newBuilder(<your provider>)
 - Blacklisting malicious IP addresses
 - Enabling access only for specific IP addresses
 
+## Enhanced Security Handlers
+NetArmor provides a set of enhanced security features, that can be used to protect your application from various attacks,
+including bot attacks, traffic from malicious/infected clients etc.
+
+### TLS (JA3) Fingerprinting
+#### Reactive.
+
+It is a technique, that is used to identify a client based on the TLS handshake,
+exactly on the Client Hello message. It is a pretty new yet popular technique, that is used by many companies, including Cloudflare, to identify malicious clients.
+
+As it is specific to every application, NetArmor provides a simple interface, that can be used to implement TLS fingerprinting:
+```java
+public class MyTlsFingerprinter implements FingerprintPacketHandler {
+    @Override
+    public Mono<ResultCode> handle(ChannelHandlerContext ctx, ClientHello ch) {
+        var ja3 = ch.ja3();
+        
+        var hash = ja3.md5(); // md5 hash of ja3 fingerprint
+        var raw = ja3.value(); // raw ja3 fingerprint
+        
+        // Do something with ja3
+        // for example, check if it is in the blacklist
+        // P.S isBlacklisted should be implemented by you
+        
+        if (isBlacklisted(ja3))
+            return Mono.just(ResultCode.BLOCK);
+        
+        return Mono.just(ResultCode.OK);
+    }
+    
+    @Override
+    public String name() {
+        return "my-tls-fingerprinter"; // Unique name used in the pipeline
+    }
+}
+```
+When ResultCode.BLOCK is returned, the connection is closed immediately,
+there is no need to close it manually. (e.q calling `ctx.close()`)
+
+Don't forget to add your fingerprint handler to NetArmor instance:
+```
+NetArmorPipeline.newBuilder(<your provider>)
+        .tlsFingerprint(new MyTlsFingerprinter())
+        .build();
+```
+
+#### Possible use cases:
+- Allowing only specific clients to connect to your application (e.g. mobile clients)
+- Blocking malicious clients (e.g. requests sent by malware on user's computer)
+- Detecting bot attacks
+
+To analyze TLS fingerprint with request and other fingerprinting options, please see section below.
+
 ### Intrusion Detection System (IDS)
 #### Reactive.
 
-IDS is a set of rules, that are used to detect attacks, that are not detected by other security features.
-
-It gives you ability to detect attacks, that are not detected by other security features, including 0day attacks,
+IDS gives you ability to detect attacks, that are not detected by other security features, including 0day attacks,
 or even identify new attacks, that are not known yet.
 
 Although realization depends on the application, we already work on AI Based IDS, that will be available soon.
@@ -498,17 +466,14 @@ We plan to make it open source, so that everyone can contribute to it and make i
 
 It will be advanced enough to detect attacks, that are not detected by other security features.
 
-Information gathering consists of 4 steps:
-- Remote Address gathering
-- TLS (JA3) fingerprint gathering, if applicable (TLS must be used)
-- HTTP/2 Settings gathering, if applicable (HTTP/2 must be used)
-- HTTP Request gathering
+The process of gathering information is meticulously structured into four essential phases:
 
-All data in combination allows detect everything, starting from basic attacks based on path checking,
-requests with strange data, ending with checking if data is spoofed, by trying to apply TLS fingerprint with
-HttpRequest.
+- The first phase involves the collection of Remote Addresses, which helps pinpoint the origin of the traffic.
+- When TLS is used, the next step is capturing TLS (JA3) fingerprint, that is very helpful in detecting spoofing.
+- For traffic over HTTP/2, we also gather HTTP/2 Fingerprints, following the guidelines set by Akamai: [AKAMAI WHITE PAPER](https://www.blackhat.com/docs/eu-17/materials/eu-17-Shuster-Passive-Fingerprinting-Of-HTTP2-Clients-wp.pdf)
+- Finally, we compile data from HTTP Requests for examination the traffic's characteristics.
 
-NOTE: TLS is available only if TLS is used, HTTP/2 is available only if HTTP/2 is used.
+The power of detecting 
 
 Example of implementation:
 ```java
@@ -524,7 +489,8 @@ public class MyIntrusionDetector implements IntrusionDetector {
         var request = data.getRequest(); // The request that is being checked
         var ip = data.getRemoteAddress(); // IP address of the client
         
-        var http2Settings = data.getHttp2Settings(); // HTTP/2 settings, if HTTP/2 is used
+        var http2Fingerprint = data.getHttp2Fingerprint();
+        var formattedHttp2Fingerprint = http2Fingerprint.toString(); // Akamai suggested format
         // P.S you can collect data in case you want to train own model in future
         // or even to contribute the dataset to us.
         // Everything depends on privacy policy of your application, if it is allowed.
@@ -575,13 +541,14 @@ Client can not simply intercept the packet and change data in it, because there 
 Identifying 0day attacks is challenging due to their unknown nature and sophisticated tactics. However, by analyzing certain aspects of network traffic, it's possible to identify potential 0day threats.
 
 - Monitor for unusual HttpRequest behaviors that deviate from the norm. This could include irregular request sequences, unexpected header values, or unusual request payloads. These anomalies might indicate an attempt to exploit unknown vulnerabilities.
-- Compare the TLS fingerprints and Http2Settings of incoming traffic against known profiles of legitimate users. For example, if the TLS fingerprint or HTTP/2 settings don't match what's expected for the declared client type (like a well-known browser), this inconsistency can be a red flag.
+- Compare the TLS fingerprints and Http2Settings of incoming traffic against known profiles of legitimate users. For example, if the TLS fingerprint or HTTP/2 fingerprint don't match what's expected for the declared client type (like a well-known browser), this inconsistency can be a red flag.
 - Look beyond the surface of HttpRequests to understand the intent. Sequential or repetitive requests targeting specific endpoints or unusual data patterns may indicate scanning activities often associated with 0day exploits.
 - Track requests to identify common scanner patterns or source information that's typically associated with malicious activities. This includes scrutinizing the IP address for known bad actors or geolocations commonly linked to attackers.
 
 #### ... and many more
 
-Thus, IDS is a powerful tool, that can be used to detect attacks, that are not detected by other security features.
+Thus, IDS is a powerful tool, that can be used to detect attacks or helps in detecting advanced attacks.
+Described parameters will help you to 
 
 #### We remind again, that we are working on AI Based IDS, that will be available soon.
 
@@ -594,11 +561,11 @@ There is no 100% security, it is a continuous process, that requires a lot of ef
 
 #### AI Based IDS
 Please contact us by email: `contact@exploit.org` if you want to contribute to AI Based IDS.
-More data we have, more accurate IDS will be.
+More data we have, more accurate opensource IDS we can develop.
 
 #### Repository
 Please make sure before you create a pull request, that your code is clean, readable, and maintainable.
-Follow KISS, DRY, SOLID, YAGNI, and other principles.
+KISS, DRY, SOLID and YAGNI are your best friends.
 
 ### FOR ANY NON-PUBLIC SECURITY ISSUES, THAT YOU DON'T WANT TO DISCLOSE, PLEASE CONTACT US BY EMAIL:
 ### `security@exploit.org`
@@ -611,6 +578,10 @@ While we stay abreast of current security trends, identify new vulnerabilities,
 and implement innovative security measures, we believe that more eyes on a problem lead to better solutions.
 We welcome your participation and collaboration in strengthening the security of IT systems.
 ```
+
+## TODO
+- Create more detailed documentation
+- Move from exploit.org's maven to maven central.
 
 ## License
 NetArmor is licensed under the BSD License. See [BSD](LICENSE) for more information.

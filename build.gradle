@@ -1,10 +1,11 @@
 plugins {
     id 'java'
+    id 'java-library'
     id 'maven-publish'
 }
 
 group = 'org.exploit'
-version = '1.0'
+version = '1.1'
 
 repositories {
     mavenCentral()
@@ -19,7 +20,7 @@ publishing {
         maven(MavenPublication) {
             groupId = 'org.exploit'
             artifactId = 'netarmor'
-            version = '1.0'
+            version = '1.1'
 
             from components.java
         }
@@ -41,17 +42,13 @@ dependencies {
     testImplementation platform('org.junit:junit-bom:5.9.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 
-    implementation 'org.exploit:secure-memory:1.0'
-    implementation 'org.owasp.antisamy:antisamy:1.7.5'
+    api 'org.exploit:secure-memory:1.0'
+    api 'org.owasp.antisamy:antisamy:1.7.5'
+
     implementation 'org.apache.commons:commons-text:1.11.0'
 
     implementation 'io.netty:netty-codec-http2:4.1.101.Final'
-    implementation 'io.netty:netty-buffer:4.1.101.Final'
-    implementation 'io.netty:netty-codec-http:4.1.101.Final'
     implementation 'io.netty:netty-common:4.1.101.Final'
-    implementation 'io.netty:netty-transport:4.1.101.Final'
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
-    implementation 'org.apache.httpcomponents.core5:httpcore5:5.2.3'
 
     implementation 'io.projectreactor:reactor-core:3.6.0'
     implementation 'net.java.dev.jna:jna:5.13.0'
